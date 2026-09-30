@@ -1,0 +1,12 @@
+# A night owl (bed 03:00, up 11:00) with quiet hours: it should still dream once a night.
+name: night-owl-schedule
+seed: 11
+persona: presets/night_owl.yaml
+days: 2
+speed: max
+providers: { default: fake }
+assert:
+  - dreams_count: 2
+  - explorations_min: 2
+  - boredom_within: [0, 1]
+  - daily_usd_max: 0

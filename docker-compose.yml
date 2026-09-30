@@ -1,0 +1,81 @@
+# Dream Pet — self-hosted, single user.
+#
+#   cp deploy/dreampet.compose.yaml config/dreampet.yaml   # edit roles/keys
+#   echo "DREAMPET_ADMIN_TOKEN=$(openssl rand -hex 16)" > config/.secrets
+#   docker compose up -d                          # cloud-keys profile (default services)
+#   docker compose --profile local up -d          # + SearXNG for fully local search
+#   docker compose --profile observability up -d  # + Langfuse tracing
+#   docker compose --profile s3 up -d             # + MinIO media storage
+#
+# The API binds to localhost on the host by default; put a reverse proxy in front if you
+# expose it, and keep the admin token secret.
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg18
+    environment:
+      POSTGRES_USER: dreampet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dreampet}
+      POSTGRES_DB: dreampet
+    volumes: [pgdata:/var/lib/postgresql, ./deploy/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dreampet"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    depends_on: { postgres: { condition: service_healthy } }
+    environment:
+      DREAMPET_DATABASE_URL: postgresql://dreampet:${POSTGRES_PASSWORD:-dreampet}@postgres:5432/dreampet
+    env_file: [{ path: config/.secrets, required: false }]
+    volumes: [./config:/config, media:/config/data]
+    ports: ["127.0.0.1:8000:8000"]
+
+  worker:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    command: ["dreampet", "worker"]
+    depends_on: { api: { condition: service_started } }
+    environment:
+      DREAMPET_DATABASE_URL: postgresql://dreampet:${POSTGRES_PASSWORD:-dreampet}@postgres:5432/dreampet
+    env_file: [{ path: config/.secrets, required: false }]
+    volumes: [./config:/config, media:/config/data]
+
+  web:
+    build:
+      context: frontend
+      args: { NEXT_PUBLIC_API_URL: "http://localhost:8000" }
+    depends_on: [api]
+    ports: ["127.0.0.1:3000:3000"]
+
+  searxng:
+    profiles: [local]
+    image: searxng/searxng:latest
+    volumes: [./deploy/searxng:/etc/searxng]
+    ports: ["127.0.0.1:8080:8080"]
+
+  minio:
+    profiles: [s3]
+    image: minio/minio:latest
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-dreampet}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-dreampet-secret}
+    volumes: [minio:/data]
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+
+  langfuse:
+    profiles: [observability]
+    image: langfuse/langfuse:3
+    depends_on: { postgres: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql://dreampet:${POSTGRES_PASSWORD:-dreampet}@postgres:5432/langfuse
+      NEXTAUTH_URL: http://localhost:3001
+      NEXTAUTH_SECRET: ${LANGFUSE_SECRET:-change-me}
+      SALT: ${LANGFUSE_SALT:-change-me}
+    ports: ["127.0.0.1:3001:3000"]
+
+volumes:
+  pgdata:
+  media:
+  minio:

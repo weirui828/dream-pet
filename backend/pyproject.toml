@@ -1,0 +1,82 @@
+[project]
+name = "dreampet"
+version = "0.1.0"
+description = "A self-hosted AI companion that gets bored, explores the web, chats, and dreams."
+license = "AGPL-3.0-only"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "langgraph>=1.2,<1.3",
+    "langgraph-checkpoint-sqlite>=3.0",
+    "langchain>=1.4,<1.5",
+    "langchain-core>=1.6",
+    "fastapi>=0.142,<0.143",
+    "uvicorn[standard]>=0.30",
+    "sse-starlette>=3.0",
+    "sqlalchemy>=2.1,<2.2",
+    "sqlite-vec>=0.1.9",
+    "numpy>=2.0",
+    "pydantic>=2.10",
+    "pyyaml>=6.0",
+    "typer>=0.15",
+    "httpx>=0.28",
+    "pillow>=11.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+postgres = [
+    "psycopg[binary,pool]>=3.2",
+    "pgvector>=0.4",
+    "langgraph-checkpoint-postgres>=3.0",
+]
+cloud = [
+    "langchain-anthropic",
+    "langchain-openai",
+    "langchain-google-genai",
+    "langchain-ollama",
+]
+fetch = ["trafilatura>=2.0"]
+tracing = ["langfuse>=3.0"]
+s3 = ["boto3>=1.35"]
+
+[project.scripts]
+dreampet = "dreampet.cli.main:app"
+
+[project.entry-points."dreampet.drive_models"]
+hybrid_lp = "dreampet.drives.hybrid:HybridLPBoredom"
+count_based = "dreampet.drives.alt:CountBasedBoredom"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dreampet"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "TID"]
+ignore = ["E501", "B008"]
+
+# "No code calls datetime.now() directly": all time flows through dreampet.clock.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"datetime.datetime.now".msg = "Use the Clock (dreampet.clock) instead of wall time."
+"datetime.datetime.utcnow".msg = "Use the Clock (dreampet.clock) instead of wall time."
+"datetime.date.today".msg = "Use the Clock (dreampet.clock) instead of wall time."
+"time.time".msg = "Use the Clock (dreampet.clock) instead of wall time."
+
+[tool.ruff.lint.per-file-ignores]
+"dreampet/clock/*" = ["TID251"]

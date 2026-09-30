@@ -1,0 +1,16 @@
+# A dreamy poet over three nights. The owner messages it after bedtime: it sleep-talks.
+name: poet-sleeptalk
+seed: 7
+persona: presets/poet.yaml
+days: 3
+speed: max
+providers: { default: fake }
+events:
+  - { day: 1, time: "12:00", chat: "Write me a tiny poem about tides?" }
+  - { day: 2, time: "01:30", chat: "Are you awake?" }
+assert:
+  - dreams_count: 3
+  - every_dream_element_grounded: true
+  - reads_min: 5
+  - proactive_max_per_day: 5
+  - daily_usd_max: 0

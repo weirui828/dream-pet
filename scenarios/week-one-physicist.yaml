@@ -1,0 +1,14 @@
+name: week-one-physicist
+seed: 42
+persona: presets/physicist.yaml
+days: 7
+speed: max
+providers: { default: fake, dreamer_llm: replay }
+events:
+  - { day: 2, time: "20:00", chat: "Tell me something weird about black holes" }
+  - { day: 4, time: "all", inject_articles: corpus/octopus/* }
+assert:
+  - boredom_within: [0, 1]
+  - dreams_count: 7
+  - every_dream_element_grounded: true
+  - daily_usd_max: 0

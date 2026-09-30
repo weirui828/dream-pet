@@ -1,0 +1,18 @@
+# Tuning example: the historian with a faster-growing boredom and a wider hysteresis band.
+# Compare against a run without `drives:` using `dreampet sim compare`.
+name: restless-tuning
+seed: 5
+persona: presets/historian.yaml
+days: 2
+speed: max
+providers: { default: fake }
+drives:
+  boredom.growth_rate: 0.2
+  boredom.theta_low: 0.2
+config:
+  video: { frequency: stills_only }
+assert:
+  - explorations_min: 3
+  - topic_entropy_min: 1.0
+  - videos_rendered_min: 2
+  - daily_usd_max: 0

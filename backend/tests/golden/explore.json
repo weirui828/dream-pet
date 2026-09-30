@@ -1,0 +1,26 @@
+{
+ "boredom": 0.217,
+ "reads": [
+  [
+   "Quantum steering",
+   "quantum entanglement"
+  ],
+  [
+   "Quantum robotics",
+   "quantum entanglement"
+  ],
+  [
+   "List of black holes",
+   "black holes"
+  ],
+  [
+   "Extremal black hole",
+   "black holes"
+  ],
+  [
+   "Rational thermodynamics",
+   "thermodynamics"
+  ]
+ ],
+ "stop_reason": "satisfied"
+}

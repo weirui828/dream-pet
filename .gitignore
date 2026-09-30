@@ -1,0 +1,18 @@
+# runtime data
+data/
+backend/data/
+config/
+.secrets
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+dreampet-export.json
+# python
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+# node
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
