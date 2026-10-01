@@ -3,6 +3,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { api, streamUrl } from "./api";
 
+const INVALIDATE = "dreampet:invalidate";
+
+/** Tell every useApi() reading a path that starts with `prefix` to refetch now
+ *  (e.g. after editing the persona, so the name in the sidebar updates immediately). */
+export function invalidate(prefix: string) {
+  window.dispatchEvent(new CustomEvent(INVALIDATE, { detail: prefix }));
+}
+
 /** Fetch JSON, refetch on demand or on an interval. Data from a previous path is never shown. */
 export function useApi<T = any>(path: string | null, intervalMs?: number) {
   const [state, setState] = useState<{ path: string | null; data?: T; error?: string }>({ path: null });
@@ -25,6 +33,15 @@ export function useApi<T = any>(path: string | null, intervalMs?: number) {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const onInvalidate = (e: Event) => {
+      const prefix = (e as CustomEvent<string>).detail;
+      if (pathRef.current?.startsWith(prefix)) reload();
+    };
+    window.addEventListener(INVALIDATE, onInvalidate);
+    return () => window.removeEventListener(INVALIDATE, onInvalidate);
+  }, [reload]);
 
   useEffect(() => {
     if (!path) return;
@@ -101,5 +118,34 @@ export function useDebounced<T>(fn: (v: T) => void, ms = 400) {
       t.current = setTimeout(() => f.current(v), ms);
     },
     [ms],
+  );
+}
+
+/** The pet's theme colour, kept live: applyTheme() writes it to <html style>, so watch that. */
+export function useThemeAccent(): string {
+  return useSyncExternalStore(
+    (cb) => {
+      const mo = new MutationObserver(cb);
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+      return () => mo.disconnect();
+    },
+    () => {
+      const v = getComputedStyle(document.documentElement).getPropertyValue("--accent-base").trim();
+      return /^#[0-9a-f]{6}$/i.test(v) ? v : "#2f6fd6";
+    },
+    () => "#2f6fd6",
+  );
+}
+
+/** Follows the OS dark-mode setting. */
+export function usePrefersDark(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia("(prefers-color-scheme: dark)");
+      m.addEventListener("change", cb);
+      return () => m.removeEventListener("change", cb);
+    },
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+    () => false,
   );
 }

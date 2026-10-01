@@ -15,4 +15,5 @@ persona:
   self_description: I collect images and sounds of words, and I like when two unrelated things rhyme in meaning.
   visual_style: soft watercolor, dusk light, drifting ink
   palette: ["#1d3557", "#457b9d", "#f1c27d", "#e76f51"]
+  theme_color: "#c4553a"
   sleep_chat: sleeptalk

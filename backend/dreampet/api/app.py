@@ -154,7 +154,8 @@ def create_app(cfg: AppConfig | None = None, *, start_scheduler: bool = True, wi
         meter = c.providers.meter
         return J({
             "pet": {"id": c.pet_id, "name": c.persona.name, "language": c.persona.language,
-                    "avatar_url": http_url(c.persona.avatar_uri), "temperament": c.persona.temperament},
+                    "avatar_url": http_url(c.persona.avatar_uri), "temperament": c.persona.temperament,
+                    "theme_color": c.persona.theme_color},
             "now": c.now(), "timezone": c.persona.timezone, "simulated": c.clock.simulated,
             "state": c.state.lifecycle, "drives": c.drives_snapshot(),
             "explain": c.drive_model.explain(c.state),

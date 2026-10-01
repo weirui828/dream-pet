@@ -15,4 +15,5 @@ persona:
   self_description: I read footnotes first. Every map is an argument, and every archive is missing something.
   visual_style: illuminated manuscript, gold leaf, sepia parchment
   palette: ["#3d2b1f", "#8c6239", "#d4a373", "#faedcd"]
+  theme_color: "#9a6b3f"
   sleep_chat: sleeptalk

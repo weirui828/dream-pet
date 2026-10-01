@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { useApi } from "@/lib/hooks";
+import { applyTheme } from "@/lib/theme";
 
 const LINKS = [
   { href: "/", label: "Home", icon: "M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
@@ -18,10 +20,12 @@ const LINKS = [
 export default function Nav() {
   const path = usePathname();
   const { data: st } = useApi<any>("/pets/me/status", 15000);
+  const theme = st?.pet?.theme_color;
+  useEffect(() => applyTheme(theme), [theme]);
   return (
     <nav className="sticky top-0 z-20 flex shrink-0 flex-col gap-1 border-b border-line bg-bg/90 px-3 py-3 backdrop-blur md:h-screen md:w-56 md:border-r md:border-b-0 md:py-6">
       <Link href="/" className="mb-2 flex items-center gap-2 px-2">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-accent text-sm font-bold text-white">
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-accent text-sm font-bold text-accent-ink">
           {(st?.pet?.name || "D").slice(0, 1)}
         </span>
         <span className="font-semibold">{st?.pet?.name || "Dream Pet"}</span>

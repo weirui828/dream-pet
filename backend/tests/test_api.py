@@ -85,3 +85,12 @@ def test_thin_samples_keeps_state_changes_and_last_point():
     assert len(out) < 150
     ts = {r["t"] for r in out}
     assert {400, 407, 999} <= ts
+
+
+def test_theme_color_is_part_of_the_persona(runtime):
+    with _client(runtime) as c:
+        assert c.get("/api/v1/pets/t/status").json()["pet"]["theme_color"] == "#2f6fd6"
+        assert c.patch("/api/v1/pets/t/persona", json={"theme_color": "purple"}).status_code == 422
+        c.patch("/api/v1/pets/t/persona", json={"theme_color": "#C4553A"})
+        assert c.get("/api/v1/pets/t/status").json()["pet"]["theme_color"] == "#C4553A"
+        assert "#C4553A" in c.get("/api/v1/pets/t/persona/export").text  # travels with shared personas

@@ -1,55 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
+import type { Cluster } from "@/components/BallMap";
 import { Card, Empty, ErrorNote, PageHeader, Pill } from "@/components/ui";
 import type { Memory } from "@/lib/api";
 import { useApi } from "@/lib/hooks";
 
-type Cluster = { id: string; label: string; size: number; lp: number; visits: number; seed: boolean; error_history: number[] };
-type Bubble = Cluster & { x: number; y: number; r: number };
+// three.js needs the browser (WebGL), so skip server rendering
+const BallMap = dynamic(() => import("@/components/BallMap"), {
+  ssr: false,
+  loading: () => <div className="grid h-full place-items-center text-sm text-muted">Loading the mind map…</div>,
+});
 
-function layout(cs: Cluster[], W: number, H: number): Bubble[] {
-  const maxSize = Math.max(1, ...cs.map((c) => c.size));
-  const sorted = [...cs].sort((a, b) => b.size - a.size || a.id.localeCompare(b.id));
-  const bs: Bubble[] = sorted.map((c, i) => {
-    const r = 18 + 52 * Math.sqrt(c.size / maxSize);
-    const a = i * 2.39996; // golden-angle spiral start
-    const d = 14 * Math.sqrt(i) * 3;
-    return { ...c, r, x: W / 2 + d * Math.cos(a), y: H / 2 + d * Math.sin(a) };
-  });
-  for (let it = 0; it < 300; it++) {
-    for (let i = 0; i < bs.length; i++) {
-      const a = bs[i];
-      a.x += (W / 2 - a.x) * 0.01;
-      a.y += (H / 2 - a.y) * 0.01;
-      for (let j = i + 1; j < bs.length; j++) {
-        const b = bs[j];
-        const dx = b.x - a.x || 0.01,
-          dy = b.y - a.y || 0.01;
-        const dist = Math.hypot(dx, dy);
-        const min = a.r + b.r + 6;
-        if (dist < min) {
-          const push = (min - dist) / 2;
-          const ux = dx / dist,
-            uy = dy / dist;
-          a.x -= ux * push;
-          a.y -= uy * push;
-          b.x += ux * push;
-          b.y += uy * push;
-        }
-      }
-      a.x = Math.max(a.r, Math.min(W - a.r, a.x));
-      a.y = Math.max(a.r, Math.min(H - a.r, a.y));
-    }
-  }
-  return bs;
-}
-
-function lpColor(lp: number): string {
-  if (lp > 0.005) return `color-mix(in oklab, var(--curiosity) ${Math.round(25 + Math.min(1, lp / 0.15) * 65)}%, var(--panel-2))`;
-  if (lp < -0.005) return `color-mix(in oklab, var(--accent) ${Math.round(20 + Math.min(1, -lp / 0.15) * 50)}%, var(--panel-2))`;
-  return "var(--panel-2)";
-}
 
 function Spark({ xs }: { xs: number[] }) {
   if (xs.length < 2) return <span className="text-xs text-muted">—</span>;
@@ -67,31 +30,23 @@ export default function MindMap() {
   const { data, error } = useApi<Cluster[]>("/pets/me/clusters", 60000);
   const [sel, setSel] = useState<string | null>(null);
   const { data: mems } = useApi<Memory[]>(sel ? `/pets/me/memories?cluster_id=${sel}&limit=30` : null);
-  const W = 900,
-    H = 560;
-  const bubbles = useMemo(() => layout((data || []).filter((c) => c.size > 0 || c.seed), W, H), [data]);
+  const shown = useMemo(() => (data || []).filter((c) => c.size > 0 || c.seed), [data]);
   const cl = data?.find((c) => c.id === sel);
 
   return (
     <div>
-      <PageHeader title="Mind map" subtitle="Topics it has read about. Size = memories; colour = learning progress (pink: getting better at predicting; violet: getting worse; grey: mastered or noise)." />
+      <PageHeader title="Mind map" subtitle="Topics it has read about. Each bubble is a topic: size is how many memories it holds, colour is learning progress. Click one to look inside." />
       <ErrorNote error={error} />
       {data && data.length === 0 && <Empty>No topics yet.</Empty>}
-      <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
-        <Card className="overflow-hidden !p-2">
-          <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
-            {bubbles.map((b) => (
-              <g key={b.id} onClick={() => setSel(b.id)} className="cursor-pointer">
-                <circle cx={b.x} cy={b.y} r={b.r} fill={lpColor(b.lp)} stroke={sel === b.id ? "var(--accent)" : b.seed ? "var(--muted)" : "var(--line)"} strokeWidth={sel === b.id ? 3 : 1} strokeDasharray={b.seed && b.size === 0 ? "4 4" : undefined} />
-                <foreignObject x={b.x - b.r * 0.85} y={b.y - b.r * 0.6} width={b.r * 1.7} height={b.r * 1.2}>
-                  <div className="flex h-full w-full flex-col items-center justify-center text-center leading-tight" style={{ fontSize: Math.max(10, Math.min(14, b.r / 4)) }}>
-                    <span className="line-clamp-2 font-medium">{b.label}</span>
-                    <span className="text-[10px] text-muted">{b.size}</span>
-                  </div>
-                </foreignObject>
-              </g>
-            ))}
-          </svg>
+      <div className="grid items-start gap-4 xl:grid-cols-[1fr_320px]">
+        <Card className="relative overflow-hidden !p-0">
+          <div className="h-[460px] md:h-[580px]">{shown.length > 0 && <BallMap clusters={shown} selected={sel} onSelect={setSel} />}</div>
+          <div className="pointer-events-none absolute bottom-3 left-4 flex flex-wrap gap-3 text-[11px] text-muted">
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "#f7a8c9" }} /> learning (error falling)</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "#a9a6f5" }} /> getting harder</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full ring-1 ring-line" style={{ background: "#f3f0fb" }} /> mastered or noise</span>
+            <span>· drag to tilt</span>
+          </div>
         </Card>
         <Card title={cl ? cl.label : "Pick a topic"}>
           {cl ? (
@@ -106,7 +61,7 @@ export default function MindMap() {
                 <div className="label mb-1">Prediction error over time</div>
                 <Spark xs={cl.error_history} />
               </div>
-              <ul className="space-y-2">
+              <ul className="max-h-[400px] space-y-2 overflow-y-auto pr-1">
                 {(mems || []).map((m) => (
                   <li key={m.id} className="border-t border-line pt-2">
                     <div className="font-medium">{m.title}</div>

@@ -7,8 +7,13 @@
   --ink: #1f1d2b;
   --muted: #6d6a7c;
   --line: #e4e0d9;
-  --accent: #6d4aff;
-  --accent-soft: #ece6ff;
+  /* --accent-base is set from the pet's persona (theme_color) at runtime */
+  --accent-base: #2f6fd6;
+  --accent: var(--accent-base);
+  --accent-ink-light: #ffffff; /* readable text on the accent, computed with the color */
+  --accent-ink-dark: #12111a;
+  --accent-ink: var(--accent-ink-light);
+  --accent-soft: color-mix(in oklab, var(--accent) 14%, var(--panel));
   --boredom: #e0822b;
   --energy: #1f9e89;
   --curiosity: #d9468f;
@@ -25,8 +30,9 @@
     --ink: #ece9f5;
     --muted: #a19db3;
     --line: #2f2c3d;
-    --accent: #9d86ff;
-    --accent-soft: #2a2447;
+    --accent: color-mix(in oklab, var(--accent-base) 72%, white);
+    --accent-ink: var(--accent-ink-dark);
+    --accent-soft: color-mix(in oklab, var(--accent) 22%, var(--panel));
     --boredom: #f2a152;
     --energy: #3cc4ad;
     --curiosity: #ef6fae;
@@ -43,8 +49,9 @@
   --ink: #ece9f5;
   --muted: #a19db3;
   --line: #2f2c3d;
-  --accent: #9d86ff;
-  --accent-soft: #2a2447;
+  --accent: color-mix(in oklab, var(--accent-base) 72%, white);
+  --accent-ink: var(--accent-ink-dark);
+  --accent-soft: color-mix(in oklab, var(--accent) 22%, var(--panel));
   --boredom: #f2a152;
   --energy: #3cc4ad;
   --curiosity: #ef6fae;
@@ -62,6 +69,7 @@
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-boredom: var(--boredom);
   --color-energy: var(--energy);
   --color-curiosity: var(--curiosity);
@@ -109,7 +117,7 @@ input[type="range"] {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--accent-ink);
 }
 .btn-primary:hover {
   filter: brightness(1.08);
@@ -151,5 +159,47 @@ input[type="range"] {
 @media (prefers-reduced-motion: reduce) {
   .breathe {
     animation: none;
+  }
+}
+
+@keyframes confirm-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes confirm-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+.confirm-backdrop {
+  animation: confirm-fade 0.15s ease-out;
+}
+.confirm-panel {
+  animation: confirm-pop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-backdrop,
+  .confirm-panel {
+    animation: none;
+  }
+}
+
+/* soft haze behind the mind map balls */
+.dreamy-backdrop {
+  background:
+    radial-gradient(60% 55% at 25% 20%, rgba(232, 214, 255, 0.55), transparent 70%),
+    radial-gradient(55% 50% at 80% 80%, rgba(255, 218, 200, 0.45), transparent 70%),
+    radial-gradient(50% 45% at 85% 15%, rgba(200, 236, 255, 0.45), transparent 70%),
+    #fdfbff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dreamy-backdrop {
+    background:
+      radial-gradient(60% 55% at 25% 20%, rgba(120, 90, 200, 0.35), transparent 70%),
+      radial-gradient(55% 50% at 80% 80%, rgba(200, 110, 150, 0.25), transparent 70%),
+      radial-gradient(50% 45% at 85% 15%, rgba(80, 150, 210, 0.25), transparent 70%),
+      #15122a;
   }
 }

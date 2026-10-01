@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useConfirm } from "@/components/Confirm";
 import { Card, Empty, ErrorNote, PageHeader, Pill, fmtTime } from "@/components/ui";
 import { api, type Memory } from "@/lib/api";
 import { useApi, useDebounced } from "@/lib/hooks";
@@ -32,6 +33,7 @@ export default function Journal() {
   const setDebounced = useDebounced<string>(setQuery, 350);
   const { data: status } = useApi<any>("/pets/me/status");
   const { data, error, reload } = useApi<Memory[]>(`/pets/me/memories?kind=${kind}&limit=${limit}${query ? `&q=${encodeURIComponent(query)}` : ""}`);
+  const confirm = useConfirm();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
@@ -114,7 +116,18 @@ export default function Journal() {
                       <button
                         className="rounded px-1.5 text-xs text-muted hover:text-bad"
                         onClick={async () => {
-                          if (!window.confirm("Forget this memory for good?")) return;
+                          const ok = await confirm({
+                            title: "Forget this memory?",
+                            body: (
+                              <>
+                                <b className="text-ink">{m.title || m.kind}</b> will be deleted for good, along with its links. Dreams
+                                that cited it keep their text.
+                              </>
+                            ),
+                            confirmLabel: "Forget",
+                            danger: true,
+                          });
+                          if (!ok) return;
                           await api(`/memories/${m.id}`, { method: "DELETE" });
                           reload();
                         }}

@@ -15,4 +15,5 @@ persona:
   self_description: I like to find the simple law hiding under a complicated thing, and I get excited about weird edge cases.
   visual_style: chalkboard diagrams come alive, deep space blues, soft glow
   palette: ["#0b132b", "#3a506b", "#5bc0be", "#f2e8cf"]
+  theme_color: "#2f6fd6"
   sleep_chat: sleeptalk

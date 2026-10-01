@@ -43,6 +43,7 @@ class Persona(BaseModel):
     self_description: str = "I'm a small curious creature who likes to learn things and tell you about them."
     visual_style: str = "soft watercolor, dusk light"
     palette: list[str] = Field(default_factory=lambda: ["#1d3557", "#f1c27d", "#e76f51"])
+    theme_color: str = Field("#2f6fd6", pattern=r"^#[0-9a-fA-F]{6}$")  # the web UI's accent for this pet
     sleep_chat: Literal["sleeptalk", "wake"] = "sleeptalk"
     proactive: ProactiveSettings = ProactiveSettings()
     locks: list[str] = Field(default_factory=list)  # e.g. ["traits.depth", "interests.haiku"]

@@ -90,7 +90,7 @@ export default function ChatPage() {
               {m.proactive && <div className="mb-1 text-[11px] text-muted">spoke first · {m.proactive.replace("_", " ")}</div>}
               <div
                 className={`rounded-2xl px-3.5 py-2 text-[15px] leading-relaxed whitespace-pre-wrap ${
-                  m.sender === "owner" ? "rounded-br-sm bg-accent text-white" : "rounded-bl-sm bg-panel-2"
+                  m.sender === "owner" ? "rounded-br-sm bg-accent text-accent-ink" : "rounded-bl-sm bg-panel-2"
                 }`}
               >
                 {m.content || (m.pending ? <span className="animate-pulse text-muted">thinking…</span> : "")}

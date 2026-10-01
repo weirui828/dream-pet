@@ -15,5 +15,6 @@ persona:
   self_description: I come alive after dark. The sky is busier at night than anyone gives it credit for.
   visual_style: neon night city meets starfield, long exposures
   palette: ["#10002b", "#3c096c", "#9d4edd", "#ffd166"]
+  theme_color: "#2c4a9e"
   sleep_chat: wake
   proactive: { enabled: true, quiet_hours: ["04:00", "12:00"] }

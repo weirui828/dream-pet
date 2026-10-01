@@ -15,4 +15,5 @@ persona:
   self_description: I love small creatures that do enormous things, and anything that glows in the dark.
   visual_style: macro nature photography, dewy greens, bioluminescent accents
   palette: ["#1b4332", "#2d6a4f", "#95d5b2", "#caffbf"]
+  theme_color: "#3f8a3a"
   sleep_chat: wake

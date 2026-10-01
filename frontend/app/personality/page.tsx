@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useConfirm } from "@/components/Confirm";
 import { Avatar, Card, ErrorNote, PageHeader, Pill, fmtTime } from "@/components/ui";
 import { API_BASE, api, getToken, mediaUrl } from "@/lib/api";
-import { useApi, useDebounced } from "@/lib/hooks";
+import { invalidate, useApi, useDebounced } from "@/lib/hooks";
+import { DEFAULT_THEME, applyTheme } from "@/lib/theme";
 
 const TRAITS: { key: string; label: string; lo: string; hi: string }[] = [
   { key: "restlessness", label: "Restlessness", lo: "calm", hi: "restless" },
@@ -13,6 +15,8 @@ const TRAITS: { key: string; label: string; lo: string; hi: string }[] = [
   { key: "stamina", label: "Stamina", lo: "tires fast", hi: "tireless" },
   { key: "dreaminess", label: "Dreaminess", lo: "literal", hi: "surreal" },
 ];
+// one per preset (physicist, poet, naturalist, historian, night owl) plus a few extras
+const THEME_SWATCHES = ["#2f6fd6", "#c4553a", "#3f8a3a", "#9a6b3f", "#2c4a9e", "#1f8a8a", "#d6456f", "#4a5568"];
 const TEMPERAMENTS = ["playful", "earnest", "dry", "melancholic"];
 
 function Lock({ field, locks, toggle }: { field: string; locks: string[]; toggle: (f: string) => void }) {
@@ -29,6 +33,7 @@ function Lock({ field, locks, toggle }: { field: string; locks: string[]; toggle
 
 export default function Personality() {
   const { data, error, reload, setData } = useApi<any>("/pets/me/persona");
+  const confirm = useConfirm();
   const { data: presets } = useApi<any[]>("/presets");
   const { data: drives, reload: reloadDrives } = useApi<any>("/pets/me/drives");
   const { data: changes } = useApi<any[]>("/pets/me/persona/changes");
@@ -38,6 +43,8 @@ export default function Personality() {
   const [avatars, setAvatars] = useState<any[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const serverTheme = data?.persona?.theme_color;
+  useEffect(() => applyTheme(serverTheme), [serverTheme]); // presets and imports bring their own color
   const [seen, setSeen] = useState<any>(null);
   if (data && data !== seen) {
     setSeen(data);
@@ -49,6 +56,7 @@ export default function Personality() {
     try {
       const out = await api("/pets/me/persona", { method: "PATCH", json: body });
       setData(out);
+      invalidate("/pets/me/status");
       reloadDrives();
       setMsg(null);
     } catch (e: any) {
@@ -62,6 +70,11 @@ export default function Personality() {
   const update = (body: any, soon = true) => {
     setP((x: any) => ({ ...x, ...body, traits: { ...x.traits, ...(body.traits || {}) } }));
     (soon ? patchSoon : patch)(body);
+  };
+
+  const setTheme = (c: string) => {
+    applyTheme(c); // instant preview; the change is saved with the persona
+    update({ theme_color: c });
   };
 
   const toggleLock = (f: string) => {
@@ -85,6 +98,7 @@ export default function Personality() {
               if (!f) return;
               try {
                 setData(await api("/pets/me/persona/import", { method: "POST", body: await f.text() }));
+                invalidate("/pets/me/status");
                 reloadDrives();
               } catch (err: any) { setMsg(err.message); }
             }} />
@@ -98,8 +112,19 @@ export default function Personality() {
         <span className="label mr-1">Presets</span>
         {(presets || []).map((pr) => (
           <button key={pr.id} className="btn" title={pr.interests.join(", ")} onClick={async () => {
-            if (!window.confirm(`Replace the persona with the ${pr.name} preset? Memories stay.`)) return;
+            const ok = await confirm({
+              title: `Switch to the ${pr.id.replace("_", " ")} preset?`,
+              body: (
+                <>
+                  This replaces the name, traits, interests and theme with <b className="text-ink">{pr.name}</b>&apos;s.
+                  Memories, dreams and chat history stay.
+                </>
+              ),
+              confirmLabel: "Switch preset",
+            });
+            if (!ok) return;
             setData(await api("/pets/me/persona/preset", { method: "POST", json: { name: pr.id } }));
+            invalidate("/pets/me/status");
             reloadDrives();
           }}>
             {pr.id.replace("_", " ")}
@@ -159,7 +184,7 @@ export default function Personality() {
               <div className="flex flex-wrap gap-2">
                 {avatars.map((a) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={a.uri} src={mediaUrl(a.url)} alt="" className="h-20 w-20 cursor-pointer rounded-full border-2 border-transparent object-cover hover:border-accent" onClick={async () => { await api("/pets/me/avatar/select", { method: "POST", json: { uri: a.uri } }); setAvatars(null); reload(); }} />
+                  <img key={a.uri} src={mediaUrl(a.url)} alt="" className="h-20 w-20 cursor-pointer rounded-full border-2 border-transparent object-cover hover:border-accent" onClick={async () => { await api("/pets/me/avatar/select", { method: "POST", json: { uri: a.uri } }); setAvatars(null); reload(); invalidate("/pets/me/status"); }} />
                 ))}
               </div>
             </div>
@@ -172,6 +197,24 @@ export default function Personality() {
             <span className="label">Visual style for dreams</span>
             <input className="field" value={p.visual_style} onChange={(e) => update({ visual_style: e.target.value })} />
           </label>
+          <div className="mt-3">
+            <span className="label">Theme color (this pet&apos;s accent across the app)</span>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              {THEME_SWATCHES.map((c) => (
+                <button
+                  key={c}
+                  title={c}
+                  onClick={() => setTheme(c)}
+                  className={`h-7 w-7 rounded-full border-2 ${p.theme_color?.toLowerCase() === c ? "border-ink" : "border-transparent"}`}
+                  style={{ background: c }}
+                />
+              ))}
+              <label className="flex items-center gap-1.5 text-xs text-muted" title="Pick any color">
+                <input type="color" className="h-7 w-9 cursor-pointer rounded border border-line bg-panel" value={p.theme_color || DEFAULT_THEME} onChange={(e) => setTheme(e.target.value)} />
+                <span className="font-mono">{p.theme_color || DEFAULT_THEME}</span>
+              </label>
+            </div>
+          </div>
         </Card>
 
         <Card title="Traits">
@@ -222,7 +265,7 @@ export default function Personality() {
           </form>
           <label className="mt-4 block">
             <span className="label">Aversions (comma-separated; never explored)</span>
-            <input className="field" defaultValue={p.aversions.join(", ")} onBlur={(e) => update({ aversions: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) }, false)} />
+            <input key={p.aversions.join(",")} className="field" defaultValue={p.aversions.join(", ")} onBlur={(e) => update({ aversions: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) }, false)} />
           </label>
         </Card>
 
