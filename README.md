@@ -4,6 +4,8 @@ An open-source, self-hosted AI companion that **gets bored**, **explores the web
 **chats** with you, and at night **consolidates its memories into a dream** — plus a short dream
 video. Single user, bring your own keys, runs on your machine.
 
+![Home: drives, the last 24 hours, last night's dream and recent activity](docs/screenshots/home.png)
+
 - **An inner life you can measure.** Boredom, curiosity and energy are real numbers driven by
   published ideas (kNN novelty, learning progress, habituation), not vibes. You can tune all of them.
 - **Grounded dreams.** Every scene in a dream cites the memories it came from. A critic rejects
@@ -12,6 +14,20 @@ video. Single user, bring your own keys, runs on your machine.
   fetch, video, image) has its own provider, key and daily budget. There's also a fully local, $0 profile.
 - **Simulation mode.** The same code runs on a simulated clock with fake or replayed providers:
   a week of pet life in ~10 seconds, deterministic, free.
+
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Mind map: topics it has read about, sized by memories and coloured by learning progress](docs/screenshots/mindmap.png) | ![Dreams: a nightly dream with its video, shots and grounded story](docs/screenshots/dreams.png) |
+| **Mind map:** topics it has read about, sized by memories, coloured by learning progress | **Dreams:** each night's dream with its video and the memories behind every scene |
+| ![Journal: what it learned, where it read it and how surprising it was](docs/screenshots/journal.png) | ![Chat: replies cite the memories and dreams they draw on](docs/screenshots/chat.png) |
+| **Journal:** what it learned, where, and how surprising it was | **Chat:** replies cite the memories and dreams they draw on |
+| ![Personality: trait sliders, presets and identity](docs/screenshots/personality.png) | |
+| **Personality:** trait sliders and presets that compile into drive parameters | |
+
+Taken from `dreampet demo`, which uses fake providers, so the text is stitched from the offline
+Wikipedia corpus rather than written by a real model.
 
 ## Quick start (no keys needed)
 
