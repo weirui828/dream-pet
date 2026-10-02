@@ -21,6 +21,7 @@ from dreampet.memory.repo import MemoryRepo
 from dreampet.persona.compiler import Compiled, compile_persona
 from dreampet.persona.model import Persona
 from dreampet.providers.roles import Providers
+from dreampet.redact import redact_obj
 from dreampet.runtime.bus import Bus
 from dreampet.runtime.media import MediaStore
 
@@ -97,7 +98,7 @@ class PetContext:
     # ---- events & drives ---------------------------------------------------------------------
 
     def emit(self, type_: str, payload: dict[str, Any] | None = None) -> None:
-        payload = payload or {}
+        payload = redact_obj(payload or {})  # error text from providers can quote keys or credentialed URLs
         t = self.now()
         self.repo.add_event(self.pet_id, self.run_id, t, type_, payload)
         self.bus.publish("event", {"type": type_, "t": t.isoformat(), "payload": payload})

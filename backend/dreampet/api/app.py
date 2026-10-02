@@ -23,8 +23,9 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from starlette.concurrency import run_in_threadpool
 
+from dreampet.api.logs import install_redaction
 from dreampet.clock import RealClock
-from dreampet.config import AppConfig, deep_merge, load_config, repo_root
+from dreampet.config import AppConfig, deep_merge, load_config, register_config_secrets, repo_root
 from dreampet.drives.params import DriveParams, apply_overrides
 from dreampet.memory.repo import MemoryRepo
 from dreampet.persona.model import Persona, dump_persona_yaml, load_persona_file
@@ -109,6 +110,8 @@ def create_app(cfg: AppConfig | None = None, *, start_scheduler: bool = True, wi
         yield
         st.runtime.shutdown()
 
+    register_config_secrets(cfg)
+    install_redaction()
     app = FastAPI(title="Dream Pet", version="0.1.0", lifespan=lifespan)
     app.state.st = st
     app.add_middleware(CORSMiddleware, allow_origins=cfg.api.cors_origins, allow_credentials=True,
