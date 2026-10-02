@@ -94,3 +94,101 @@ def test_theme_color_is_part_of_the_persona(runtime):
         c.patch("/api/v1/pets/t/persona", json={"theme_color": "#C4553A"})
         assert c.get("/api/v1/pets/t/status").json()["pet"]["theme_color"] == "#C4553A"
         assert "#C4553A" in c.get("/api/v1/pets/t/persona/export").text  # travels with shared personas
+
+
+def test_redact_hides_secrets():
+    from dreampet.redact import redact, register_secrets
+
+    register_secrets(["my-own-provider-key-123", "short"])
+    cases = {
+        "GET /api/v1/media/a.mp4?w=1&token=s3cret&api_key=abc HTTP/1.1": ["s3cret", "abc "],
+        "Authorization: Bearer abcdefgh1234": ["abcdefgh1234"],
+        "searxng: ConnectError for url 'https://bob:hunter2pass@search.local/search'": ["bob", "hunter2pass"],
+        "openai: Incorrect API key provided: sk-proj-ABCDEFGHIJKLMNOPQRST": ["sk-proj-ABCDEFGHIJKLMNOPQRST"],
+        "gemini: bad key AIzaSyA1234567890abcdefghijklmnopqrstu": ["AIzaSyA1234567890abcdefghijklmnopqrstu"],
+        "custom provider rejected my-own-provider-key-123 (401)": ["my-own-provider-key-123"],
+    }
+    for text, secrets in cases.items():
+        out = redact(text)
+        assert "[REDACTED]" in out, out
+        for sec in secrets:
+            assert sec not in out, out
+    assert "?w=1&token=[REDACTED]&api_key=[REDACTED]" in redact("x?w=1&token=a&api_key=b")
+    assert redact("a short word stays") == "a short word stays"  # values under 8 chars aren't registered
+
+
+def test_config_secrets_masked_in_events(runtime):
+    from dreampet.config import RoleConfig, register_config_secrets
+
+    cfg = runtime.ctx.cfg
+    cfg.roles["custom"] = RoleConfig(provider="fake", api_key="role-key-abcdef123456")
+    register_config_secrets(cfg)
+    runtime.ctx.emit("provider_error", {"role": "chat_llm", "error": "401: key role-key-abcdef123456 invalid",
+                                        "nested": ["role-key-abcdef123456"]})
+    with _client(runtime) as c:
+        body = c.get("/api/v1/pets/me/events").text
+    assert "provider_error" in body and "role-key-abcdef123456" not in body
+
+
+def test_access_log_never_prints_token(runtime, capfd):
+    import socket
+    import threading
+
+    import httpx
+    import uvicorn
+
+    cfg = runtime.ctx.cfg
+    cfg.api.admin_token = "s3cret-token-value"
+    app = create_app(cfg, runtime=runtime, start_scheduler=False)
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="info"))
+    t = threading.Thread(target=server.run, daemon=True)
+    t.start()
+    try:
+        for _ in range(200):
+            if server.started:
+                break
+            threading.Event().wait(0.05)
+        r = httpx.get(f"http://127.0.0.1:{port}/api/v1/pets/me/status?token=s3cret-token-value")
+        assert r.status_code == 200
+    finally:
+        server.should_exit = True
+        t.join(timeout=10)
+    out, err = capfd.readouterr()
+    logs = out + err
+    assert "/api/v1/pets/me/status?token=[REDACTED]" in logs
+    assert "s3cret-token-value" not in logs
+
+
+def test_error_log_and_thread_crash_redacted(capsys):
+    import logging
+    import threading
+
+    from dreampet.api.logs import RedactSecrets, install_crash_redaction
+    from dreampet.redact import register_secrets
+
+    register_secrets(["crash-secret-0123456789"])
+    try:
+        raise RuntimeError("provider said crash-secret-0123456789 is wrong")
+    except RuntimeError:
+        import sys
+        rec = logging.LogRecord("uvicorn.error", logging.ERROR, __file__, 1, "Exception in ASGI app %s", ("/x?token=t0k",),
+                                sys.exc_info())
+    assert RedactSecrets().filter(rec)
+    text = logging.Formatter().format(rec)
+    assert "RuntimeError" in text and "crash-secret-0123456789" not in text and "t0k" not in text
+
+    old = threading.excepthook
+    install_crash_redaction()
+    try:
+        def boom():
+            raise RuntimeError("crash-secret-0123456789")
+        th = threading.Thread(target=boom, name="scheduler")
+        th.start()
+        th.join()
+    finally:
+        threading.excepthook = old
+    err = capsys.readouterr().err
+    assert "Exception in thread scheduler" in err and "crash-secret-0123456789" not in err

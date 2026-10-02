@@ -10,6 +10,8 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field
 
+from dreampet.redact import register_secrets, url_password
+
 ROLE_NAMES = (
     "explorer_llm", "chat_llm", "dreamer_llm", "screenwriter_llm",
     "embeddings", "search", "fetch", "video", "image",
@@ -276,7 +278,22 @@ def load_config(path: str | Path | None = None, overrides: dict[str, Any] | None
         cfg.database_url = env["DREAMPET_DATABASE_URL"]
     if not cfg.api.admin_token:
         cfg.api.admin_token = env.get("DREAMPET_ADMIN_TOKEN")
+    register_config_secrets(cfg, load_secrets_file(base_dir / ".secrets"))
     return cfg
+
+
+_SECRET_ENV = re.compile(r"(?i)(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)")
+
+
+def register_config_secrets(cfg: AppConfig, secrets_file: dict[str, str] | None = None) -> None:
+    """Everything secret this process knows, so logs and events can mask it (dreampet.redact)."""
+    vals: list[str | None] = [cfg.api.admin_token, url_password(cfg.database_url)]
+    vals += [rc.api_key for rc in cfg.roles.values()]
+    vals += [url_password(rc.url) for rc in cfg.roles.values()]
+    vals += list((secrets_file or {}).values())
+    vals += [v for k, v in os.environ.items() if _SECRET_ENV.search(k)]
+    vals += [url_password(v) for k, v in os.environ.items() if k.endswith("_URL")]
+    register_secrets(vals)
 
 
 def deep_merge(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
