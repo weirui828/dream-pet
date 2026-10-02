@@ -36,8 +36,8 @@ uv run dreampet chat
 
 Paste the admin token from `.secrets` into the web UI's Settings screen.
 
-Docker: see the header of `docker-compose.yml` (Postgres + pgvector, API, video worker, web;
-optional profiles for SearXNG, MinIO and Langfuse).
+Data lives in SQLite by default. To use Postgres + pgvector instead, set `DREAMPET_DATABASE_URL`
+(e.g. `postgresql://user:pass@localhost:5432/dreampet`).
 
 ## How it works
 

@@ -1,7 +1,0 @@
-# Minimal SearXNG config for Dream Pet: enables the JSON API the search adapter uses.
-use_default_settings: true
-server:
-  secret_key: "change-me-in-production"
-  limiter: false
-search:
-  formats: [html, json]

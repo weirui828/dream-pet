@@ -1,7 +1,6 @@
 # runtime data
 data/
 backend/data/
-config/
 .secrets
 *.sqlite
 *.sqlite-wal
