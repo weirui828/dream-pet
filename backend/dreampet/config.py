@@ -135,7 +135,7 @@ class SafetyConfig(BaseModel):
     moderation: bool = True
     max_fetch_chars: int = 6000
     per_domain_min_seconds: float = 5.0
-    user_agent: str = "DreamPet/0.1 (+https://github.com/dream-pet/dream-pet; self-hosted AI companion)"
+    user_agent: str = "DreamPet/0.1 (+https://github.com/weirui828/dream-pet; self-hosted AI companion)"
     respect_robots: bool = True
 
 

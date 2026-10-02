@@ -18,7 +18,7 @@ from pathlib import Path
 import httpx
 
 API = "https://en.wikipedia.org/w/api.php"
-UA = "DreamPetCorpusBuilder/0.1 (https://github.com/dream-pet/dream-pet; offline sim corpus)"
+UA = "DreamPetCorpusBuilder/0.1 (https://github.com/weirui828/dream-pet; offline sim corpus)"
 
 TOPICS = [
     "black hole", "quantum entanglement", "dark matter", "exoplanet", "neutron star",
