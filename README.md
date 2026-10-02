@@ -82,22 +82,21 @@ sleep or wakes up grumpy, and a pet that just read something surprising may mess
 
 ### By day: curiosity as a control loop
 
-Boredom rises on its own (`dB/dt = g(1−B) − Σ s(e)`) and only real learning brings it down. When it
+Boredom rises on its own and only real learning brings it down. When it
 crosses a threshold, the explore agent goes looking:
 
-- **Topic choice follows learning progress.** It favours topics where its predictions are getting
-  better, not ones it has already mastered or ones it can't make sense of. An ε-wildcard keeps it
-  from getting stuck.
-- **It predicts, then reads.** Before reading a page it guesses the gist from the title. The gap
-  between its guess and the real summary is the surprise signal, which combines with kNN novelty
-  and habituation into how satisfying the read was.
+- **It chooses topics it's learning fastest in.** It favours topics where its understanding is
+  improving, not ones it has already mastered or can't make sense of, with an occasional random
+  pick so it doesn't get stuck.
+- **It predicts, then reads.** Before reading a page it guesses the gist from the title. Pages that
+  surprise it, and that are new to it, satisfy its curiosity most.
 - **The drives decide when to stop.** After each read it updates its drives and then keeps reading,
   switches topic, or stops because it is tired, satisfied, out of reads or it's bedtime.
 
 ```mermaid
 flowchart TD
     S((start)) --> pick_topic
-    pick_topic["<b>pick_topic</b><br/>softmax over learning progress, ε-wildcard"] --> plan_queries["<b>plan_queries</b><br/>LLM → structured QueryPlan"]
+    pick_topic["<b>pick_topic</b><br/>where am I learning fastest?"] --> plan_queries["<b>plan_queries</b><br/>LLM → structured QueryPlan"]
     plan_queries --> search
     search --> select_sources["<b>select_sources</b><br/>blocklist · dedupe · aversion · moderation"]
     select_sources -- sources found --> fetch_and_sanitize
@@ -105,9 +104,9 @@ flowchart TD
     select_sources -- out of topics --> finish
     fetch_and_sanitize -- page --> predict_then_read["<b>predict_then_read</b><br/>guess the gist from the title, then read"]
     fetch_and_sanitize -- fetch failed --> update_drives
-    predict_then_read -- notes --> memorize["<b>memorize</b><br/>prediction error → novelty · learnability · habituation"]
+    predict_then_read -- notes --> memorize["<b>memorize</b><br/>how surprising and new was it?"]
     predict_then_read -- unsafe / provider error --> update_drives
-    memorize --> update_drives["<b>update_drives</b><br/>step dB/dt, decide what's next"]
+    memorize --> update_drives["<b>update_drives</b><br/>update boredom and energy, decide what's next"]
     update_drives -- more in queue --> fetch_and_sanitize
     update_drives -- new topic --> pick_topic
     update_drives -- tired · satisfied · cap · bedtime --> finish
@@ -169,7 +168,7 @@ All six graphs are diagrammed in [docs/graphs.md](docs/graphs.md).
 | Piece | Where |
 | --- | --- |
 | Clock (`RealClock`, `SimClock`; no `datetime.now()` anywhere else) | `backend/dreampet/clock` |
-| Drives: `dB/dt = g(1−B) − Σ s(e)`, `s = w·novelty·learnability·habituation`; LP topic choice | `backend/dreampet/drives` |
+| Drives (boredom, curiosity, energy) and topic choice | `backend/dreampet/drives` |
 | Memory: tables, kNN, retrieval score, clustering, consolidation | `backend/dreampet/memory` |
 | Roles, adapters, fakes, record/replay fixtures, budget guard | `backend/dreampet/providers` |
 | Graphs (diagrams of all six: [docs/graphs.md](docs/graphs.md)) | `backend/dreampet/graphs` |
