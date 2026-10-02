@@ -108,5 +108,5 @@ dreampet persona export|import FILE      dreampet export | wipe --yes
 - Keys come from env vars or `.secrets`, never the DB, logs or API responses.
 - Memories stay local. View, edit or forget any memory; `dreampet export` / `dreampet wipe`.
 
-License: AGPL-3.0 (see `LICENSE`, and `CONTRIBUTING.md` for the CLA). The offline corpus is
+License: AGPL-3.0 (see `LICENSE`). Contributions are made under the [CLA](CLA.md); see `CONTRIBUTING.md`. The offline corpus is
 Wikipedia text under CC BY-SA 4.0 (`corpus/README.md`).

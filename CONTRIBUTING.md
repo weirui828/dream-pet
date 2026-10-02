@@ -1,8 +1,9 @@
 # Contributing
 
 Thanks for helping! Dream Pet is AGPL-3.0. Before your first pull request is merged you'll be
-asked to sign a Contributor License Agreement (CLA Assistant comments on the PR). The CLA keeps
-dual licensing (AGPL + commercial) possible later.
+asked to sign the [Contributor License Agreement](CLA.md): the CLA Assistant bot comments on the
+PR, and you sign by replying `I have read the CLA Document and I hereby sign the CLA`. You only
+sign once. The CLA keeps dual licensing (AGPL + commercial) possible.
 
 ## Dev setup
 
